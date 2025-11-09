@@ -1,7 +1,7 @@
 import swisseph as swe
 import pyttsx3  # noqa: F401
 import pendulum  # ✅
-from modulok import tables, astro_core
+from modulok import tables, astro_core, varshaphala_tools
 from modulok.astro_core import calculate_nakshatra, get_house_index, calculate_ascendant
 from modulok.tables import purushartha_map, bolygo_nakshatra_map, haz_aspektusok, haz_bolygo_aspektusok, nakshatras
 from modulok.draw import rajzol_del_indiai_horoszkop
@@ -307,6 +307,18 @@ def generate_full_analysis_with_visual(chart_data):
     filename = save_analysis_pdf(md, chart_data["keresztnev"])
     print(f"PDF mentve: {filename}")
     return filename
+    
+def varshaphala_elemzes(szulinap, ev):
+    # Számítás a varshaphala modulból
+    adat = varshaphala_tools.szamit_varshaphala(szulinap, ev)
+    
+    # Szöveges interpretáció
+    szoveg = f"A {ev}. év Varshaphala elemzése:\n"
+    szoveg += f"Ascendens: {adat['asc']}\n"
+    szoveg += f"Főbb bolygóhatások: {adat['bolygok']}\n"
+    szoveg += f"Éves fókusz: {adat['tema']}\n"
+    return szoveg
+
 def enrich_planet_data(chart_data):
     ayanamsa = chart_data.get("ayanamsa")
     if ayanamsa is None:

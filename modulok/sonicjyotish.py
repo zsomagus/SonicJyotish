@@ -72,34 +72,15 @@ with st.sidebar:
     st.header("🔮 Navigáció")
 
     választás = st.radio("Válassz modult:", [
-        "Prashna – kérdezői horoszkóp",
         "Rashi – születési horoszkóp",
         "Varga – részhoroszkópok",
+        "Prashna – kérdezői horoszkóp",
         "Yantra – tithi alapján",
         "Elemzés – bolygók, házak, karakterek",
-        "Korszakrendszer – Vimshottari Dasa"
+        "Korszakrendszer – Vimshottari Dasa",
+        "Dreamy - Álomnapló".
     ])
 
-if választás == "Prashna – kérdezői horoszkóp":
-    st.subheader("🕉️ Prashna horoszkóp")
-    prashna_data = prashna_core.fill_prashna_data_streamlit()
-    tithi = int(((prashna_data["chart_data"]["Moon"]["longitude"] - prashna_data["chart_data"]["Sun"]["longitude"]) % 360) / 12) + 1
-    draw.rajzol_del_indiai_horoszkop(prashna_data["chart_data"], tithi, is_prashna=True, date_str=prashna_data["date"], time_str=prashna_data["time"])
-    prashna_img_path = os.path.join("static", f"prashna_{prashna_data['date']}_{prashna_data['time'].replace(':', '-')}_D1.png")
-    st.image(prashna_img_path, caption="Prashna Chart")
-if st.button("🎼 Generálj zenét és képet az elemzésből", key="Prashna_generate"):
-    elemzes = prashna_core.analyze_dream(dream_text, mood, symbols)
-    prompt = prompt_from_analysis(elemzes)
-    folder = create_output_folder(prompt)
-    save_prompt(prompt, folder)
-    mp3 = generate_mp3(prompt, folder)
-    xml, midi = generate_musicxml(prompt, folder)
-    pdf = export_pdf(xml, folder)
-    image = generate_image(prompt, folder)
-
-    st.success(f"Média generálva: {folder}")
-    st.audio(mp3)
-    st.image(image)
 
 elif választás == "Rashi – születési horoszkóp":
     st.subheader("🌙 Rashi horoszkóp")
@@ -146,6 +127,27 @@ if st.button("🎼 Generálj zenét és képet az elemzésből", key="varga_gene
         st.success(f"Média generálva: {folder}")
         st.audio(mp3)
         st.image(image)
+
+if választás == "Prashna – kérdezői horoszkóp":
+    st.subheader("🕉️ Prashna horoszkóp")
+    prashna_data = prashna_core.fill_prashna_data_streamlit()
+    tithi = int(((prashna_data["chart_data"]["Moon"]["longitude"] - prashna_data["chart_data"]["Sun"]["longitude"]) % 360) / 12) + 1
+    draw.rajzol_del_indiai_horoszkop(prashna_data["chart_data"], tithi, is_prashna=True, date_str=prashna_data["date"], time_str=prashna_data["time"])
+    prashna_img_path = os.path.join("static", f"prashna_{prashna_data['date']}_{prashna_data['time'].replace(':', '-')}_D1.png")
+    st.image(prashna_img_path, caption="Prashna Chart")
+if st.button("🎼 Generálj zenét és képet az elemzésből", key="Prashna_generate"):
+    elemzes = prashna_core.analyze_dream(dream_text, mood, symbols)
+    prompt = prompt_from_analysis(elemzes)
+    folder = create_output_folder(prompt)
+    save_prompt(prompt, folder)
+    mp3 = generate_mp3(prompt, folder)
+    xml, midi = generate_musicxml(prompt, folder)
+    pdf = export_pdf(xml, folder)
+    image = generate_image(prompt, folder)
+
+    st.success(f"Média generálva: {folder}")
+    st.audio(mp3)
+    st.image(image)
 
 elif választás == "Yantra – tithi alapján":
     st.subheader("🔍 Yantra keresés kulcsszavak alapján")
@@ -234,3 +236,59 @@ for álom in dreams:
 df = pd.DataFrame(álom_adatok)
 st.subheader("🌙 Álomnapló – daśa-trióval")
 st.dataframe(df)
+elif választás= "Dreamy - Álomnapló"
+    
+
+# 💾 Álombejegyzések betöltése
+if "dream_log" not in st.session_state:
+    if os.path.exists("dream_log.json"):
+        with open("dream_log.json", "r", encoding="utf-8") as f:
+            st.session_state.dream_log = json.load(f)
+    else:
+        st.session_state.dream_log = []
+
+# 🌌 UI beállítások
+st.set_page_config(page_title="Álomidéző Napló", page_icon="🌌", layout="centered")
+st.title("🌙 Álomidéző Napló")
+st.markdown("Jegyezd fel álmaidat, hangulataidat és szimbólumaidat – minden reggel egy új kapu a tudattalanhoz.")
+
+# 📝 Új álom bejegyzése
+st.header("📝 Új álom bejegyzése")
+
+with st.form("dream_form"):
+    dream_text = st.text_area("Mit álmodtál?", height=150)
+    mood = st.selectbox("Milyen hangulatban volt az álom?", ["Nyugodt", "Zaklatott", "Misztikus", "Félelmetes", "Boldog", "Zavaros"])
+    symbols = st.multiselect("Milyen szimbólumok jelentek meg?", ["Víz", "Kígyó", "Tükör", "Repülés", "Tűz", "Hold", "Ismeretlen személy"])
+    submitted = st.form_submit_button("✨ Mentés")
+
+# 💾 Mentés pendulummba
+if submitted and dream_text:
+    now = pendulum.now("Europe/Budapest")
+    datum_str = now.format("YYYY-MM-DD HH:mm")
+    st.session_state.dream_log.append({
+        "Dátum": datum_str,
+        "Álom": dream_text,
+        "Hangulat": mood,
+        "Szimbólumok": ", ".join(symbols)
+    })
+    st.success("Álom mentve! 🌠")
+
+    with open("dream_log.json", "w", encoding="utf-8") as f:
+        json.dump(st.session_state.dream_log, f, ensure_ascii=False, indent=2)
+
+# 📜 Archívum megjelenítése
+st.header("📜 Korábbi álmok")
+if st.session_state.dream_log:
+    df = pd.DataFrame(st.session_state.dream_log)
+    st.dataframe(df[::-1], use_container_width=True)
+else:
+    st.info("Még nincs elmentett álom. Kezdd el a naplózást!")
+if submitted:
+    st.session_state.dream_log.append({
+        "text": dream_text,
+        "mood": mood,
+        "symbols": symbols,
+        "timestamp": pendulum.now().to_iso8601_string()
+    })
+
+    st.success("Álom mentve!")
